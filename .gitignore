@@ -1,0 +1,7 @@
+# Archivos compilados
+build/
+dist/
+*.class
+
+# Configuración privada de NetBeans
+/nbproject/private/
