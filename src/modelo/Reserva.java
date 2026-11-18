@@ -1,5 +1,5 @@
 
-package pi_e1_g327._minova;
+package modelo;
 import java.time.LocalDate;
 import java.time.LocalTime;
 public class Reserva {

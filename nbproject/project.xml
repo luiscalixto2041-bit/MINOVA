@@ -5,7 +5,6 @@
         <data xmlns="http://www.netbeans.org/ns/j2se-project/3">
             <name>PI_E1_G327 _MINOVA</name>
             <source-roots>
-                <root id="src.BASE%20DE%20DATOS%201.dir"/>
                 <root id="src.dir"/>
             </source-roots>
             <test-roots>

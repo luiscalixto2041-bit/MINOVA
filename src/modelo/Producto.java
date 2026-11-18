@@ -1,5 +1,5 @@
 
-package pi_e1_g327._minova;
+package modelo;
 
 public class Producto {
     private String nombreProducto; //[cite: 1]
