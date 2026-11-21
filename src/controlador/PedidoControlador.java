@@ -7,6 +7,7 @@ package controlador;
 
 import modelo.Pedido;
 import repositorio.PedidoRepositorio;
+import java.util.ArrayList;
 
 public class PedidoControlador {
 
@@ -45,5 +46,9 @@ public class PedidoControlador {
 
     public Pedido buscarPedido(int idPedido) {
         return repositorio.buscar(idPedido);
+    }
+
+    public ArrayList<Pedido> listarPedidos() {
+        return repositorio.listar();
     }
 }

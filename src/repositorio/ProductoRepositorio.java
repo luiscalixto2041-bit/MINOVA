@@ -66,4 +66,9 @@ public class ProductoRepositorio {
 
         return false;
     }
+    
+    // LISTAR PRODUCTOS
+    public ArrayList<Producto> listar() {
+        return new ArrayList<>(productos);
+    }
 }

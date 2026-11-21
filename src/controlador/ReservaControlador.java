@@ -12,6 +12,8 @@ import repositorio.ReservaRepositorio;
 
 public class ReservaControlador {
 
+    public static final int TOTAL_MESAS = 10;
+
     private final ReservaRepositorio repositorio =
             new ReservaRepositorio();
 
@@ -51,6 +53,33 @@ public class ReservaControlador {
 
     public java.util.ArrayList<Reserva> listarReservas() {
         return repositorio.listar();
+    }
+
+    // UNA MESA ESTA RESERVADA SI TIENE UNA RESERVA PARA HOY
+    public boolean mesaReservadaHoy(int numeroMesa) {
+        LocalDate hoy = LocalDate.now();
+
+        for (Reserva reserva : repositorio.listar()) {
+            if (reserva.getNumeroMesa() == numeroMesa
+                    && reserva.getFechaReserva().equals(hoy)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // CUANTAS MESAS ESTAN LIBRES HOY
+    public int mesasLibresHoy() {
+        int libres = 0;
+
+        for (int mesa = 1; mesa <= TOTAL_MESAS; mesa++) {
+            if (!mesaReservadaHoy(mesa)) {
+                libres++;
+            }
+        }
+
+        return libres;
     }
 }
 

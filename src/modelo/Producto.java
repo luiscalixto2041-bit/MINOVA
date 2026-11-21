@@ -1,10 +1,9 @@
-
 package modelo;
 
 public class Producto {
-    private String nombreProducto; //[cite: 1]
-    private double precioProducto; //[cite: 1]
-    private int stock;             //[cite: 1]
+    private String nombreProducto; 
+    private double precioProducto; 
+    private int stock;            
 
     public Producto() {}
 

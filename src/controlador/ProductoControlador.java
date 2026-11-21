@@ -1,14 +1,12 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
-
 package controlador;
 
 import modelo.Producto;
 import repositorio.ProductoRepositorio;
+import java.util.ArrayList;
 
 public class ProductoControlador {
+
+    public static final int STOCK_BAJO = 10;
 
     private final ProductoRepositorio repositorio;
 
@@ -60,5 +58,34 @@ public class ProductoControlador {
         }
 
         return repositorio.eliminar(nombre.trim());
+    }
+    
+    // LISTAR PRODUCTOS
+    public ArrayList<Producto> listarProductos() {
+        return repositorio.listar();
+    }
+
+    // ESTADO DEL STOCK: Disponible, Bajo o Agotado
+    public String estadoStock(int stock) {
+        if (stock <= 0) {
+            return "Agotado";
+        }
+        if (stock <= STOCK_BAJO) {
+            return "Bajo";
+        }
+        return "Disponible";
+    }
+
+    // CUANTOS PRODUCTOS ESTAN BAJOS O AGOTADOS
+    public int productosConAlerta() {
+        int cantidad = 0;
+
+        for (Producto producto : repositorio.listar()) {
+            if (producto.getStock() <= STOCK_BAJO) {
+                cantidad++;
+            }
+        }
+
+        return cantidad;
     }
 }

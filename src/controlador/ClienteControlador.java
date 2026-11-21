@@ -7,6 +7,7 @@ package controlador;
 
 import modelo.Cliente;
 import repositorio.ClienteRepositorio;
+import java.util.ArrayList;
 
 public class ClienteControlador {
 
@@ -53,6 +54,11 @@ public class ClienteControlador {
         }
 
         return repositorio.eliminar(documento.trim());
+    }
+    
+    // Listar clientes
+    public ArrayList<Cliente> listarClientes() {
+        return repositorio.listar();
     }
 }
 

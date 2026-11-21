@@ -55,4 +55,8 @@ public class ClienteRepositorio {
         }
         return false;
     }
+    
+    public ArrayList<Cliente> listar() {
+        return new ArrayList<>(clientes);
+    }
 }
