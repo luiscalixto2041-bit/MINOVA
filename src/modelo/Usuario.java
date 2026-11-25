@@ -2,24 +2,88 @@
 package modelo;
 
 public class Usuario {
-    private String nombreUsuario; //
-    private String contraseña;    //
-    private String rol;           //
 
-    public Usuario() {}
+    private int idUsuario;
+    private String nombreCompleto;
+    private String nombreUsuario;
+    private int idRol;
+    private String rol;
+    private boolean estado;
 
-    public Usuario(String nombreUsuario, String contraseña, String rol) {
+    // CONSTRUCTOR VACIO
+
+    public Usuario() {
+    }
+
+    // CONSTRUCTOR PARA MYSQL
+
+    public Usuario(int idUsuario,
+                   String nombreCompleto,
+                   String nombreUsuario,
+                   int idRol,
+                   String rol,
+                   boolean estado) {
+
+        this.idUsuario = idUsuario;
+        this.nombreCompleto = nombreCompleto;
         this.nombreUsuario = nombreUsuario;
-        this.contraseña = contraseña;
+        this.idRol = idRol;
+        this.rol = rol;
+        this.estado = estado;
+    }
+
+    // GETTERS Y SETTERS
+
+    public int getIdUsuario() {
+        return idUsuario;
+    }
+
+    public void setIdUsuario(int idUsuario) {
+        this.idUsuario = idUsuario;
+    }
+
+    public String getNombreCompleto() {
+        return nombreCompleto;
+    }
+
+    public void setNombreCompleto(String nombreCompleto) {
+        this.nombreCompleto = nombreCompleto;
+    }
+
+    public String getNombreUsuario() {
+        return nombreUsuario;
+    }
+
+    public void setNombreUsuario(String nombreUsuario) {
+        this.nombreUsuario = nombreUsuario;
+    }
+
+    public int getIdRol() {
+        return idRol;
+    }
+
+    public void setIdRol(int idRol) {
+        this.idRol = idRol;
+    }
+
+    public String getRol() {
+        return rol;
+    }
+
+    public void setRol(String rol) {
         this.rol = rol;
     }
 
-    public String getNombreUsuario() { return nombreUsuario; }
-    public void setNombreUsuario(String nombreUsuario) { this.nombreUsuario = nombreUsuario; }
+    public boolean isEstado() {
+        return estado;
+    }
 
-    public String getContraseña() { return contraseña; }
-    public void setContraseña(String contraseña) { this.contraseña = contraseña; }
+    public void setEstado(boolean estado) {
+        this.estado = estado;
+    }
 
-    public String getRol() { return rol; }
-    public void setRol(String rol) { this.rol = rol; }
+    @Override
+    public String toString() {
+        return nombreCompleto + " - " + rol;
+    }
 }

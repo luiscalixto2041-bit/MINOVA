@@ -1,7 +1,18 @@
+
 # Archivos compilados
 build/
 dist/
 *.class
 
-# Configuración privada de NetBeans
+# Configuracion privada de NetBeans
 /nbproject/private/
+
+# Bases de datos
+Dump*.sql
+
+# Credenciales
+.env
+.env.*
+
+# Librerias locales
+/lib/*.jar

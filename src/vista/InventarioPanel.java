@@ -1,118 +1,258 @@
+
 package vista;
 
 import java.awt.*;
+import java.sql.SQLException;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.regex.Pattern;
+
 import javax.swing.*;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableRowSorter;
 
-import controlador.ProductoControlador;
+import controlador.InventarioControlador;
 import modelo.Producto;
+import modelo.Usuario;
+import modelo.MovimientoInventario;
 
-public class InventarioPanel extends JPanel implements Refrescable {
+public class InventarioPanel extends JPanel
+        implements Refrescable {
 
-    private final ProductoControlador controlador = new ProductoControlador();
+    private final InventarioControlador controlador;
 
-    private JComboBox<String> cmbProducto;
+    private JComboBox<Producto> cmbProducto;
     private JComboBox<String> cmbTipo;
+
     private JTextField txtCantidad;
+    private JTextField txtMotivo;
     private JTextField txtBuscar;
 
     private JLabel lblControlados;
+    private JLabel lblUnidades;
     private JLabel lblBajas;
 
     private JTable tabla;
-    private DefaultTableModel modeloTabla;
+    private JTable tablaHistorial;
 
-    public InventarioPanel() {
+    private DefaultTableModel modeloTabla;
+    private DefaultTableModel modeloHistorial;
+
+    private TableRowSorter<DefaultTableModel> ordenador;
+
+    private final DateTimeFormatter formatoFecha =
+            DateTimeFormatter.ofPattern(
+                    "dd/MM/yyyy HH:mm:ss"
+            );
+
+    public InventarioPanel(Usuario usuarioActual) {
+
+        controlador = new InventarioControlador(
+                usuarioActual
+        );
 
         setLayout(new BorderLayout());
 
-        JPanel contenido = new JPanel(new BorderLayout(15, 15));
-        contenido.add(crearFormulario(), BorderLayout.NORTH);
-        contenido.add(crearListado(), BorderLayout.CENTER);
+        JPanel contenido = new JPanel(
+                new BorderLayout(15, 15)
+        );
 
-        add(Tema.marcoModulo("GESTIÓN DE INVENTARIO", contenido), BorderLayout.CENTER);
+        contenido.add(
+                crearFormulario(), BorderLayout.NORTH
+        );
+
+        JTabbedPane pestanas = new JTabbedPane();
+
+        pestanas.addTab(
+                "EXISTENCIAS", crearListado()
+        );
+
+        pestanas.addTab(
+                "HISTORIAL DE MOVIMIENTOS",
+                crearHistorial()
+        );
+
+        contenido.add(pestanas, BorderLayout.CENTER);
+
+        add(Tema.marcoModulo(
+                "GESTIÓN DE INVENTARIO", contenido
+        ), BorderLayout.CENTER);
 
         refrescar();
     }
 
-    // CONTADORES + FORMULARIO DE MOVIMIENTO
+    // FORMULARIO Y CONTADORES
+
     private JPanel crearFormulario() {
 
-        JPanel formulario = new JPanel(new BorderLayout(10, 12));
+        JPanel formulario = new JPanel(
+                new BorderLayout(10, 12)
+        );
+
         formulario.setOpaque(false);
 
         lblControlados = new JLabel("0");
+        lblUnidades = new JLabel("0");
         lblBajas = new JLabel("0");
 
-        JPanel contadores = new JPanel(new GridLayout(1, 2, 15, 0));
+        JPanel contadores = new JPanel(
+                new GridLayout(1, 3, 10, 0)
+        );
+
         contadores.setOpaque(false);
-        contadores.add(Tema.tarjeta("Productos controlados", lblControlados, Tema.OSCURO));
-        contadores.add(Tema.tarjeta("Existencias bajas", lblBajas, Tema.ROJO));
 
-        formulario.add(contadores, BorderLayout.NORTH);
+        contadores.add(Tema.tarjeta(
+                "Productos", lblControlados, Tema.OSCURO
+        ));
 
-        // MOVIMIENTO
+        contadores.add(Tema.tarjeta(
+                "Unidades", lblUnidades, Tema.VERDE
+        ));
+
+        contadores.add(Tema.tarjeta(
+                "Stock bajo", lblBajas, Tema.ROJO
+        ));
+
+        formulario.add(
+                contadores, BorderLayout.NORTH
+        );
+
         cmbProducto = new JComboBox<>();
-        cmbTipo = new JComboBox<>(new String[]{"Entrada", "Salida"});
+
+        cmbTipo = new JComboBox<>(
+                new String[]{"ENTRADA", "SALIDA"}
+        );
+
         txtCantidad = new JTextField();
+        txtMotivo = new JTextField();
 
-        JPanel campos = new JPanel(new GridLayout(1, 3, 15, 0));
+        JPanel campos = new JPanel(
+                new GridLayout(2, 2, 10, 8)
+        );
+
         campos.setOpaque(false);
-        campos.add(Tema.campoConEtiqueta("Producto:", cmbProducto));
-        campos.add(Tema.campoConEtiqueta("Tipo de movimiento:", cmbTipo));
-        campos.add(Tema.campoConEtiqueta("Cantidad:", txtCantidad));
 
-        JButton btnRegistrar = Tema.boton("+ REGISTRAR MOVIMIENTO", Tema.AMBAR);
-        btnRegistrar.addActionListener(e -> registrarMovimiento());
+        campos.add(Tema.campoConEtiqueta(
+                "Producto:", cmbProducto));
 
-        JPanel movimiento = new JPanel(new BorderLayout(0, 8));
+        campos.add(Tema.campoConEtiqueta(
+                "Tipo de movimiento:", cmbTipo));
+
+        campos.add(Tema.campoConEtiqueta(
+                "Cantidad:", txtCantidad));
+
+        campos.add(Tema.campoConEtiqueta(
+                "Motivo:", txtMotivo));
+
+        JButton btnRegistrar = Tema.boton(
+                "+ REGISTRAR MOVIMIENTO", Tema.AMBAR
+        );
+
+        JButton btnRecargar = Tema.boton(
+                "RECARGAR", Tema.GRIS
+        );
+
+        btnRegistrar.addActionListener(
+                e -> registrarMovimiento()
+        );
+
+        btnRecargar.addActionListener(
+                e -> refrescar()
+        );
+
+        JPanel movimiento = new JPanel(
+                new BorderLayout(0, 8)
+        );
+
         movimiento.setOpaque(false);
-        movimiento.add(Tema.seccion("REGISTRAR MOVIMIENTO"), BorderLayout.NORTH);
-        movimiento.add(campos, BorderLayout.CENTER);
-        movimiento.add(Tema.filaBotones(btnRegistrar), BorderLayout.SOUTH);
 
-        formulario.add(movimiento, BorderLayout.CENTER);
+        movimiento.add(
+                Tema.seccion("REGISTRAR MOVIMIENTO"),
+                BorderLayout.NORTH
+        );
+
+        movimiento.add(campos, BorderLayout.CENTER);
+
+        movimiento.add(
+                Tema.filaBotones(
+                        btnRegistrar, btnRecargar),
+                BorderLayout.SOUTH
+        );
+
+        formulario.add(
+                movimiento, BorderLayout.CENTER
+        );
 
         return formulario;
     }
 
-    // LISTADO DE EXISTENCIAS
+    // TABLA DE EXISTENCIAS
+
     private JPanel crearListado() {
 
-        JPanel listado = new JPanel(new BorderLayout(10, 12));
+        JPanel listado = new JPanel(
+                new BorderLayout(10, 10)
+        );
+
         listado.setOpaque(false);
-        listado.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Tema.GRIS));
 
         txtBuscar = Tema.campo();
-        txtBuscar.setToolTipText("Buscar producto...");
 
-        JPanel panelBusqueda = new JPanel(new BorderLayout(0, 8));
-        panelBusqueda.setOpaque(false);
-        panelBusqueda.add(Tema.seccion("EXISTENCIAS"), BorderLayout.NORTH);
-        panelBusqueda.add(txtBuscar, BorderLayout.CENTER);
+        txtBuscar.setToolTipText(
+                "Buscar producto..."
+        );
 
-        listado.add(panelBusqueda, BorderLayout.NORTH);
+        listado.add(txtBuscar, BorderLayout.NORTH);
 
-        modeloTabla = Tema.modelo("Producto", "Existencias", "Estado");
+        modeloTabla = Tema.modelo(
+                "Producto",
+                "Stock",
+                "Mínimo",
+                "Máximo",
+                "Estado"
+        );
+
         tabla = new JTable(modeloTabla);
 
-        // COLOR SEGUN EL ESTADO
-        tabla.getColumnModel().getColumn(2).setCellRenderer(new DefaultTableCellRenderer() {
+        ordenador = new TableRowSorter<>(modeloTabla);
+
+        tabla.setRowSorter(ordenador);
+
+        tabla.getColumnModel().getColumn(4)
+                .setCellRenderer(
+                        new DefaultTableCellRenderer() {
 
             @Override
-            public Component getTableCellRendererComponent(JTable t, Object valor,
-                    boolean seleccionada, boolean foco, int fila, int columna) {
+            public Component getTableCellRendererComponent(
+                    JTable t,
+                    Object valor,
+                    boolean seleccionada,
+                    boolean foco,
+                    int fila,
+                    int columna) {
 
-                Component celda = super.getTableCellRendererComponent(
-                        t, valor, seleccionada, foco, fila, columna);
+                Component celda =
+                        super.getTableCellRendererComponent(
+                                t, valor, seleccionada,
+                                foco, fila, columna
+                        );
 
                 if (!seleccionada) {
+
                     if ("Agotado".equals(valor)) {
+
                         celda.setForeground(Tema.ROJO);
-                    } else if ("Bajo".equals(valor)) {
-                        celda.setForeground(new Color(0xB07800));
+
+                    } else if ("Bajo".equals(valor)
+                            || "Exceso".equals(valor)) {
+
+                        celda.setForeground(
+                                new Color(0xB07800)
+                        );
+
                     } else {
+
                         celda.setForeground(Tema.VERDE);
                     }
                 }
@@ -121,110 +261,235 @@ public class InventarioPanel extends JPanel implements Refrescable {
             }
         });
 
-        listado.add(Tema.tabla(tabla), BorderLayout.CENTER);
+        listado.add(
+                Tema.tabla(tabla), BorderLayout.CENTER
+        );
 
-        Tema.alCambiar(txtBuscar, () -> actualizarTabla());
+        Tema.alCambiar(txtBuscar, () -> filtrar());
 
         return listado;
     }
 
-    // REGISTRAR ENTRADA O SALIDA
+    // TABLA DE HISTORIAL
+
+    private JPanel crearHistorial() {
+
+        JPanel historial = new JPanel(
+                new BorderLayout(10, 10)
+        );
+
+        historial.setOpaque(false);
+
+        modeloHistorial = Tema.modelo(
+                "ID",
+                "Fecha",
+                "Producto",
+                "Tipo",
+                "Cantidad",
+                "Motivo",
+                "Empleado"
+        );
+
+        tablaHistorial = new JTable(modeloHistorial);
+
+        historial.add(
+                Tema.tabla(tablaHistorial),
+                BorderLayout.CENTER
+        );
+
+        return historial;
+    }
+
+    // FILTRAR EXISTENCIAS
+
+    private void filtrar() {
+
+        String texto = txtBuscar.getText().trim();
+
+        ordenador.setRowFilter(
+                texto.isEmpty()
+                ? null
+                : RowFilter.regexFilter(
+                        "(?iu)" + Pattern.quote(texto))
+        );
+    }
+
+    // REGISTRAR MOVIMIENTO
+
     private void registrarMovimiento() {
 
-        String nombre = (String) cmbProducto.getSelectedItem();
-
-        if (nombre == null) {
-            Tema.error(this, "No hay productos registrados.");
-            return;
-        }
-
-        int cantidad;
-
-        try {
-            cantidad = Integer.parseInt(txtCantidad.getText().trim());
-        } catch (NumberFormatException e) {
-            Tema.error(this, "La cantidad debe ser un número entero.");
-            return;
-        }
-
-        if (cantidad <= 0) {
-            Tema.error(this, "La cantidad debe ser mayor que 0.");
-            return;
-        }
-
-        Producto producto = controlador.buscarProducto(nombre);
+        Producto producto =
+                (Producto) cmbProducto.getSelectedItem();
 
         if (producto == null) {
-            Tema.error(this, "El producto ya no existe.");
-            refrescar();
+
+            Tema.error(this,
+                    "Selecciona un producto.");
+
             return;
         }
 
-        int nuevoStock = producto.getStock() + cantidad;
+        try {
 
-        if ("Salida".equals(cmbTipo.getSelectedItem())) {
-            nuevoStock = producto.getStock() - cantidad;
-        }
+            int cantidad = Integer.parseInt(
+                    txtCantidad.getText().trim()
+            );
 
-        if (nuevoStock < 0) {
-            Tema.error(this, "Solo hay " + producto.getStock() + " unidades disponibles.");
-            return;
-        }
+            String tipo =
+                    (String) cmbTipo.getSelectedItem();
 
-        if (controlador.actualizarProducto(nombre, producto.getPrecioProducto(), nuevoStock)) {
+            String motivo =
+                    txtMotivo.getText().trim();
 
-            Tema.info(this, "Movimiento registrado. Existencias de " + nombre + ": " + nuevoStock);
+            int nuevoStock =
+                    controlador.registrarMovimiento(
+                            producto.getIdProducto(),
+                            tipo,
+                            cantidad,
+                            motivo
+                    );
+
+            Tema.info(this,
+                    "Movimiento registrado correctamente.\n"
+                    + "Producto: "
+                    + producto.getNombreProducto()
+                    + "\nExistencias actuales: "
+                    + nuevoStock
+            );
 
             txtCantidad.setText("");
+            txtMotivo.setText("");
+
             refrescar();
 
-        } else {
+        } catch (NumberFormatException e) {
 
-            Tema.error(this, "No se pudo registrar el movimiento.");
+            Tema.error(this,
+                    "La cantidad debe ser un número entero.");
+
+        } catch (IllegalArgumentException e) {
+
+            Tema.error(this, e.getMessage());
+
+        } catch (SQLException e) {
+
+            e.printStackTrace();
+
+            Tema.error(this,
+                    "No se pudo registrar el movimiento "
+                    + "en MySQL.");
         }
     }
 
-    // ACTUALIZAR TABLA
-    private void actualizarTabla() {
+    // CARGAR EXISTENCIAS
+
+    private void cargarExistencias() {
+
+        Producto seleccionado =
+                (Producto) cmbProducto.getSelectedItem();
+
+        int idAnterior = seleccionado == null
+                ? -1 : seleccionado.getIdProducto();
+
+        ArrayList<Producto> productos =
+                controlador.listarProductos();
+
+        cmbProducto.removeAllItems();
 
         modeloTabla.setRowCount(0);
 
-        String busqueda = "";
+        long unidades = 0;
+        int alertas = 0;
 
-        if (txtBuscar != null) {
-            busqueda = txtBuscar.getText().trim().toLowerCase();
+        for (Producto p : productos) {
+
+            cmbProducto.addItem(p);
+
+            if (p.getIdProducto() == idAnterior) {
+
+                cmbProducto.setSelectedItem(p);
+            }
+
+            unidades += p.getStock();
+
+            if (p.getStock() <= p.getStockMinimo()) {
+
+                alertas++;
+            }
+
+            modeloTabla.addRow(new Object[]{
+                p.getNombreProducto(),
+                p.getStock(),
+                p.getStockMinimo(),
+                p.getStockMaximo(),
+                p.getEstadoStock()
+            });
         }
 
-        for (Producto producto : controlador.listarProductos()) {
+        lblControlados.setText(
+                String.valueOf(productos.size())
+        );
 
-            if (producto.getNombreProducto().toLowerCase().contains(busqueda)) {
+        lblUnidades.setText(
+                String.valueOf(unidades)
+        );
 
-                modeloTabla.addRow(new Object[]{
-                    producto.getNombreProducto(),
-                    producto.getStock() + " unidades",
-                    controlador.estadoStock(producto.getStock())
-                });
-            }
+        lblBajas.setText(
+                String.valueOf(alertas)
+        );
+
+        filtrar();
+    }
+
+    // CARGAR HISTORIAL DESDE MYSQL
+
+    private void cargarHistorial() throws SQLException {
+
+        ArrayList<MovimientoInventario> movimientos =
+                controlador.listarMovimientos();
+
+        modeloHistorial.setRowCount(0);
+
+        for (MovimientoInventario m : movimientos) {
+
+            modeloHistorial.addRow(new Object[]{
+                m.getIdMovimiento(),
+                m.getFechaMovimiento().format(formatoFecha),
+                m.getNombreProducto(),
+                m.getTipoMovimiento(),
+                m.getCantidad(),
+                m.getMotivo(),
+                m.getNombreUsuario()
+            });
         }
     }
+
+    // REFRESCAR MODULO
 
     @Override
     public void refrescar() {
 
-        Object seleccionado = cmbProducto.getSelectedItem();
-        cmbProducto.removeAllItems();
+        try {
 
-        for (Producto producto : controlador.listarProductos()) {
-            cmbProducto.addItem(producto.getNombreProducto());
+            cargarExistencias();
+            cargarHistorial();
+
+        } catch (SQLException e) {
+
+            modeloHistorial.setRowCount(0);
+
+            e.printStackTrace();
+
+            Tema.error(this,
+                    "No se pudo consultar el historial.");
+
+        } catch (IllegalArgumentException e) {
+
+            modeloTabla.setRowCount(0);
+            modeloHistorial.setRowCount(0);
+            cmbProducto.removeAllItems();
+
+            Tema.error(this, e.getMessage());
         }
-
-        if (seleccionado != null) {
-            cmbProducto.setSelectedItem(seleccionado);
-        }
-
-        lblControlados.setText(String.valueOf(controlador.listarProductos().size()));
-        lblBajas.setText(String.valueOf(controlador.productosConAlerta()));
-
-        actualizarTabla();
     }
 }
